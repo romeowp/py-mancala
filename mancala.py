@@ -41,29 +41,38 @@ class Pit:
 
 class House(Pit):
 
-    PITS_PER_PLAYER = 7
-    DEFAULT_INITIAL_SEEDS = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0]
+    DEFAULT_INITIAL_SEEDS = [[4, 4, 4, 4, 4, 4, 0], [4, 4, 4, 4, 4, 4, 0]]
 
     def __init__(self, initial_seeds=None, owner=None, first_house=None):
         if initial_seeds is None:
             initial_seeds = self.DEFAULT_INITIAL_SEEDS
+        if owner is None:
             owner = Player()
+        if first_house is None:
             first_house = self
 
-        seeds = initial_seeds.pop(0)
-        if len(initial_seeds)-1 % self.PITS_PER_PLAYER:
-            neighbor = House(initial_seeds, owner, first_house)
-        else:
+        seeds = initial_seeds[0].pop(0)
+        if len(initial_seeds[0]) == 1:
             neighbor = Store(initial_seeds, owner, first_house)
+        else:
+            neighbor = House(initial_seeds, owner, first_house)
         super().__init__(seeds, owner, neighbor)
+
+    def sow(self):
+        seeds = self.seeds
+        self.seeds = 0
+        self.neighbor.pass_along(seeds)
 
     def pass_along(self, seeds):
         self.take_and_pass(seeds)
 
     def final_act(self):
+        print("A")
         if self.seeds == 1:
             opposing_house = self.get_opposing()
+            print("B", opposing_house.seeds)
             if opposing_house.seeds:
+                print("C")
                 self.capture_seeds(opposing_house)
 
         self.owner.end_turn()
@@ -71,20 +80,21 @@ class House(Pit):
     def get_opposing(self, store_distance=0):
         return self.neighbor.get_opposing(store_distance+1)
 
+    def move_to_store(self, seeds):
+        self.neighbor.move_to_store(seeds)
+
     def capture_seeds(self, target):
         seeds = self.seeds+target.seeds
         target.seeds = 0
         self.seeds = 0
         self.move_to_store(seeds)
 
-    def move_to_store(self, seeds):
-        self.neighbor.move_to_store(seeds)
-
 
 class Store(Pit):
 
     def __init__(self, initial_seeds, owner, first_house):
-        seeds = initial_seeds.pop(0)
+        seeds = initial_seeds[0].pop()
+        initial_seeds.pop(0)
         if initial_seeds:
             neighbor = House(initial_seeds, owner.opponent, first_house)
         else:
