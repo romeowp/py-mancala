@@ -67,18 +67,15 @@ class House(Pit):
         self.take_and_pass(seeds)
 
     def final_act(self):
-        print("A")
         if self.seeds == 1:
-            opposing_house = self.get_opposing()
-            print("B", opposing_house.seeds)
-            if opposing_house.seeds:
-                print("C")
-                self.capture_seeds(opposing_house)
+            opposite_house = self.get_opposite()
+            if opposite_house.seeds:
+                self.capture_seeds(opposite_house)
 
         self.owner.end_turn()
 
-    def get_opposing(self, store_distance=0):
-        return self.neighbor.get_opposing(store_distance+1)
+    def get_opposite(self, store_distance=0):
+        return self.neighbor.get_opposite(store_distance + 1)
 
     def move_to_store(self, seeds):
         self.neighbor.move_to_store(seeds)
@@ -110,7 +107,7 @@ class Store(Pit):
     def final_act(self):
         pass
 
-    def get_opposing(self, store_distance):
+    def get_opposite(self, store_distance):
         return self.nth_neighbor(store_distance)
 
     def move_to_store(self, seeds):

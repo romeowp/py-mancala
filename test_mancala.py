@@ -1,7 +1,15 @@
 from mancala import House, Store
 
 
-def test_setup():
+def setup_pits(initial_seeds):
+    n_pits = sum(map(len, initial_seeds))
+    pits = [House(initial_seeds)]
+    for _ in range(n_pits-1):
+        pits.append(pits[-1].neighbor)
+    return pits
+
+
+def test_initialization():
     house1 = House([[4, 4, 4, 4, 4, 4, 0], [4, 4, 4, 4, 4, 4, 0]])
     neighbor6 = house1.nth_neighbor(6)
     neighbor7 = house1.nth_neighbor(7)
@@ -18,44 +26,48 @@ def test_setup():
 
 
 def test_sow():
-    house1 = House([[0, 0, 0, 0, 9, 0, 0], [0, 0, 0, 0, 0, 0, 0]])
-    house5 = house1.nth_neighbor(4)
-    house6 = house5.neighbor
-    store1 = house6.neighbor
-    house7 = store1.neighbor
-    store2 = house7.nth_neighbor(6)
-    house5.sow()
+    pits = setup_pits([[3, 3, 3, 3, 9, 3, 0], [4, 4, 4, 4, 4, 4, 0]])
+    h11, h12, h13, h14, h15, h16, s1, h21, h22, h23, h24, h25, h26, s2 = pits
+    h15.sow()
 
-    assert house5.seeds == 0, "House should have no seeds after sowing."
-    assert house6.seeds == 1, "Sowing should leave a seed in next house."
-    assert store1.seeds == 1, "Sowing should leave a seed in own store."
-    assert house7.seeds == 1, "Sowing should leave a seed in opponent's house."
-    assert store2.seeds == 0, "Seeds should not be sown in opponent's store."
-    assert house1.seeds == 1, "Sowing should skip over opponent's store."
-    assert not house1.owner.has_turn, "Sowing should end player's turn."
-    assert house1.owner.opponent.has_turn, "Sowing should pass turn to opponent."
+    assert h15.seeds == 0, "House should have no seeds after sowing."
+    assert h16.seeds == 4, "Sowing should leave a seed in next house."
+    assert s1.seeds == 1, "Sowing may leave a seed in own store."
+    assert h21.seeds == 5, "Sowing may leave a seed in opponent's house."
+    assert s2.seeds == 0, "Seeds should not be sown in opponent's store."
+    assert h11.seeds == 4, "Sowing should skip over opponent's store."
+    assert h12.seeds == 3, "Sowing should end when all seeds from the sowing house are used"
+    assert not h11.owner.has_turn, "Sowing should end player's turn."
+    assert h11.owner.opponent.has_turn, "Sowing should pass turn to opponent."
 
 
-def test_get_opposing():
-    house1 = House([[4, 4, 4, 4, 4, 4, 0], [4, 4, 4, 4, 4, 4, 0]])
-    house6 = house1.nth_neighbor(5)
-    house7 = house6.nth_neighbor(2)
-    house12 = house7.nth_neighbor(5)
+def test_get_opposite():
+    pits = setup_pits([[4, 4, 4, 4, 4, 4, 0], [4, 4, 4, 4, 4, 4, 0]])
+    h11, h12, h13, h14, h15, h16, s1, h21, h22, h23, h24, h25, h26, s2 = pits
 
-    assert house1.get_opposing() is house12, "The first house should be opposed by the twelfth house."
-    assert house6.get_opposing() is house7, "The sixth house should be opposed by the seventh house."
-    assert house7.get_opposing() is house6, "The seventh house should be opposed by the sixth house."
+    assert h11.get_opposite() is h26, "First house should be opposite to opponent's sixth house."
+    assert h16.get_opposite() is h21, "Sixth house should be opposite to opponent's first house."
+    assert h21.get_opposite() is h16, "Opponent's first house should be opposite to sixth house."
 
 
+def test_capture():
+    pits = setup_pits([[2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0]])
+    h11, h12, h13, h14, h15, h16, s1, h21, h22, h23, h24, h25, h26, s2 = pits
+    h11.sow()
 
+    assert s1.seeds == 5, "Captured seeds should be moved to the capturing player's store."
+    assert h13.seeds == 0, "Capturing house should be empty after capture."
+    assert h24.seeds == 0, "Opposite house should be empty after capture."
 
-# def test_capture():
-#     house1 = House([[2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0]])
-#     house3 = house1.nth_neighbor(2)
-#     store1 = house3.nth_neighbor(4)
-#     house10 = house3.nth_neighbor(4)
-#     house1.sow()
-#
-#     assert store1.seeds == 5
-#     assert house3.seeds == 0
-#     assert house10.seeds == 0
+    pits = setup_pits([[2, 0, 1, 0, 0, 0, 0], [0, 0, 0, 4, 0, 0, 0]])
+    h11, h12, h13, h14, h15, h16, s1, h21, h22, h23, h24, h25, h26, s2 = pits
+    h11.sow()
+
+    assert s1.seeds == 0 and h13.seeds == 2 and h24.seeds == 4, \
+        "Capture should not occur unless the last seed is sown in an empty house."
+
+    pits = setup_pits([[2, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]])
+    h11, h12, h13, h14, h15, h16, s1, h21, h22, h23, h24, h25, h26, s2 = pits
+    h11.sow()
+
+    assert s1.seeds == 0 and h13.seeds == 1 and h24.seeds == 0, "Capture should not occur if opposite house is empty."
